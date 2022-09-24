@@ -88,10 +88,10 @@ jobs:
           echo "::set-output name=name::${gcp_image_name}"
 
     - name: Build Docker image
-      run: docker build -t ${{ secrets.ARTIFACT_REGISTRY_REPO }}:latest 
+      run: docker build -t ${{ secrets.ARTIFACT_REGISTRY_REPO }}/myapp:latest 
 
     - name: Push Docker image
-      run: docker push ${{ secrets.ARTIFACT_REGISTRY_REPO }}:latest 
+      run: docker push ${{ secrets.ARTIFACT_REGISTRY_REPO }}/myapp:latest
  
 
   deploy-http:
@@ -117,9 +117,6 @@ jobs:
 
     - name: Deploy http server
       run: |
-        gcloud run deploy $MS_NAME \
-          --image $IMAGE \
+        gcloud run deploy ${{ secrets.ARTIFACT_REGISTRY_REPO }}/myapp:latest \
           --region $REGION \
           --platform managed \
-          --update-secrets "$RUN_SECRETS" \
-          --vpc-connector $VPC_CONNECTOR \
