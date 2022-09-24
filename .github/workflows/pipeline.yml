@@ -1,104 +1,61 @@
-name: Deploy CGP
+# Nome do Workflow
+name: Frontend Pipeline - Hackathon
 
-on:
+# Evento que irá acionar a pipeline
+on: 
   push:
     branches:
       - main
-  workflow_call:
-    inputs:
-      ms_name:
-        required: true
-        type: string
-      db_instance:
-        required: true
-        type: string
-      db_name:
-        required: true
-        type: string
-      run_secrets:
-        required: false
-        type: string
-      run_envs:
-        required: false
-        type: string
-      region:
-        required: false
-        type: string
-        default: us-central1
-      vpc_connector:
-        required: false
-        type: string
-        default: serverless-vpc-connector
-    secrets:
-      GCP_CREDENTIALS:
-        required: true
 
-jobs: 
+jobs:
+  Build:
+      name: Build
+      runs-on: ubuntu-latest
+      steps: 
+        - name: Clone do Repositório
+          uses: actions/checkout@v2
 
-  build:
-    name: Build
+        - name: Login no Google Artifact Registry
+          env:
+            GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          run: | 
+            echo '${{ secrets.GOOGLE_CREDENTIALS }}' > key.json
+            cat key.json | docker login -u _json_key --password-stdin https://us-east4-docker.pkg.dev/
+
+        - name: Build Imag & Push para Google Registry
+          env: 
+            ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
+            BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          run: | 
+            docker build -t ${{ secrets.ARTIFACT_REGISTRY }}/frontend:latest --build-arg BACKEND_URL=${{ secrets.BACKEND_URL }} .
+            docker push ${{ secrets.ARTIFACT_REGISTRY }}/frontend:latest
+
+        - name: Show file
+          run: cat src/App.js
+
+  Deploy:
+    needs: Build
     runs-on: ubuntu-latest
-    env:
-      MS_NAME: ${{ inputs.ms_name }}
-    outputs:
-      gcp_image_name: ${{ steps.gcp_image.outputs.name }}
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        persist-credentials: false
-
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '16'
-
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
-
-    #- name: Typecheck 
-    #  run: yarn typecheck
-    
-    #- name: Test 
-    #  run: yarn test
-
-    - name: Build 
-      run: yarn build
-
-    - name: Docker Login
-      env:
-        GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-      run: | 
-        echo '${{ secrets.GCP_CREDENTIALS }}' > key.json
-        cat key.json | docker login -u _json_key --password-stdin https://us-central1-docker.pkg.dev/
-    - name: Build Image & Push
-      env: 
-        ARTIFACT_REGISTRY_REPO: ${{ secrets.ARTIFACT_REGISTRY_REPO }}
-      run: | 
-        docker build -t ${{ secrets.ARTIFACT_REGISTRY_REPO }}/myapp:latest .
-        docker push ${{ secrets.ARTIFACT_REGISTRY_REPO }}/myapp:latest
- 
-
-  deploy:
-    name: Deploy Gcloud HTTP
-    runs-on: ubuntu-latest
-    needs: build
-    env:
-      IMAGE: ${{ secrets.IMAGE }}
-      MS_NAME: ${{ secrets.APPLICATION }}
-      REGION: ${{ secrets.REGION }}
-      ENTRY_POINT: http
-   
-
 
     steps:
-      - id: 'auth'
-        name: 'Authenticate to Google Cloud'
+      - name: Clone do Repositório
+        uses: actions/checkout@v2
+
+      - name: Autenticação no Google Cloud
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         uses: 'google-github-actions/auth@v0'
         with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
 
-      - name: Deploy http server
-        run: |
-          gcloud run deploy $MS_NAME \
-            --image $IMAGE \
-            --region $REGION \
+      - name: Deploy Frontend no  Cloud Run
+        id: deploy
+        run: |-
+          gcloud run deploy frontend \
+            --quiet \
+            --region  ${{ secrets.GOOGLE_REGION }} \
+            --image ${{ secrets.ARTIFACT_REGISTRY }}/frontend:latest \
             --platform managed \
+            --allow-unauthenticated \
+            --project ${{ secrets.GOOGLE_PROJECT_ID }} \
+            --format json
