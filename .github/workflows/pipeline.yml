@@ -69,24 +69,6 @@ jobs:
       with:
         credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v0'
-
-    - name: 'Get gcp project'
-      id: gcp_project
-      run: |
-          gcp_project_id=$(gcloud config get-value project) 
-          echo "${gcp_project_id}"
-          echo "::set-output name=id::${gcp_project_id}"
-    
-    - name: 'Set gcp image'
-      id: gcp_image
-      run: |
-          echo "${{ steps.gcp_project.outputs.id }}"
-          gcp_image_name=gcr.io/${{ steps.gcp_project.outputs.id }}/$MS_NAME
-          echo "${gcp_image_name}"
-          echo "::set-output name=name::${gcp_image_name}"
-
     - name: Build Docker image
       run: docker build -t ${{ secrets.ARTIFACT_REGISTRY_REPO }}/myapp:latest .
 
