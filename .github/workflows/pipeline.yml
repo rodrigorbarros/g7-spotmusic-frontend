@@ -111,7 +111,7 @@ jobs:
       ENTRY_POINT: http
       RUN_SECRETS: ${{ inputs.run_secrets }}
       RUN_ENVS: ${{ inputs.run_envs }}
-      VPC_CONNECTOR: ${{ inputs.vpc_connector }}
+      VPC_CONNECTOR: ${{ secrets.vpc_connector }}
 
     steps:
     - id: 'auth'
