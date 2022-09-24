@@ -88,10 +88,10 @@ jobs:
           echo "::set-output name=name::${gcp_image_name}"
 
     - name: Build Docker image
-      run: docker build -t ${{ secrets.ARTIFACT_REGISTRY_REPO }}/frontend-registry:latest 
+      run: docker build -t ${{ secrets.ARTIFACT_REGISTRY_REPO }}:latest 
 
     - name: Push Docker image
-      run: docker push ${{ secrets.ARTIFACT_REGISTRY_REPO }}/frontend-registry:latest 
+      run: docker push ${{ secrets.ARTIFACT_REGISTRY_REPO }}:latest 
  
 
   deploy-http:
