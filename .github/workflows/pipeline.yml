@@ -87,17 +87,12 @@ jobs:
           echo "${gcp_image_name}"
           echo "::set-output name=name::${gcp_image_name}"
 
-    #- name: Configure Docker
-    #  run: gcloud auth configure-docker --quiet
+    - name: Build Docker image
+      run: docker build -t ${{ secrets.ARTIFACT_REGISTRY_REPO }}/frontend-registry:latest 
 
-    #- name: Build Docker image
-    #  run: docker build . -t ${{ steps.gcp_image.outputs.name }}
-
-    #- name: Push Docker image
-    #  run: docker push ${{ steps.gcp_image.outputs.name }}
-
-    #- name: Create Database
-    #  run: gcloud sql databases create ${{ inputs.db_name }} --instance=${{ inputs.db_instance }} || true
+    - name: Push Docker image
+      run: docker push ${{ secrets.ARTIFACT_REGISTRY_REPO }}/frontend-registry:latest 
+ 
 
   deploy-http:
     name: Deploy Gcloud HTTP
@@ -105,7 +100,7 @@ jobs:
     needs: build
     env:
       IMAGE: "${gcp_image_name}"
-      MS_NAME: ${{ inputs.ms_name }}
+      MS_NAME: "${gcp_image_name}"
       REGION: us-central1
       DB_NAME: ${{ secrets.CLOUD_SQL_DATABASE_NAME }}
       ENTRY_POINT: http
