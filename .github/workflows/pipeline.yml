@@ -1,6 +1,9 @@
 name: Deploy CGP
 
 on:
+  push:
+    branches:
+      - main
   workflow_call:
     inputs:
       ms_name:
@@ -30,7 +33,7 @@ on:
       GCP_CREDENTIALS:
         required: true
 
-jobs:
+jobs: 
 
   build:
     name: Build
