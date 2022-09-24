@@ -77,29 +77,28 @@ jobs:
         docker push ${{ secrets.ARTIFACT_REGISTRY_REPO }}/myapp:latest
  
 
-  deploy-http:
+  deploy:
     name: Deploy Gcloud HTTP
     runs-on: ubuntu-latest
     needs: build
     env:
-      IMAGE: "${gcp_image_name}"
-      MS_NAME: "${gcp_image_name}"
-      REGION: us-central1
-      DB_NAME: ${{ secrets.CLOUD_SQL_DATABASE_NAME }}
+      IMAGE: ${{ secrets.IMAGE }}
+      MS_NAME: ${{ secrets.APPLICATION }}
+      REGION: ${{ secrets.REGION }}
       ENTRY_POINT: http
-      RUN_SECRETS: ${{ inputs.run_secrets }}
-      RUN_ENVS: ${{ inputs.run_envs }}
-      VPC_CONNECTOR: ${{ secrets.vpc_connector }}
+   
+
 
     steps:
-    - id: 'auth'
-      name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-    - name: Deploy http server
-      run: |
-        gcloud run deploy ${{ secrets.ARTIFACT_REGISTRY_REPO }}/myapp:latest \
-          --region $REGION \
-          --platform managed \
+      - name: Deploy http server
+        run: |
+          gcloud run deploy $MS_NAME \
+            --image $IMAGE \
+            --region $REGION \
+            --platform managed \
